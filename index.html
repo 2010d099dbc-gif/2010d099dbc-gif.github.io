@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>日和商事 业务手册</title>
+<style>
+body{margin:0;font-family:-apple-system,"Hiragino Sans","PingFang SC",sans-serif;}
+#lock{position:fixed;inset:0;background:#221e1c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;}
+#lock h2{color:#b08d48;letter-spacing:6px;font-size:22px;margin:0;}
+#lock p{color:#9a938c;font-size:13px;margin:0;}
+#pin{width:230px;text-align:center;font-size:18px;letter-spacing:2px;padding:12px;border-radius:12px;border:1px solid #555;background:#2e2a27;color:#fff;outline:none;}
+#go{padding:11px 38px;border-radius:99px;border:none;background:#b08d48;color:#fff;font-size:15px;letter-spacing:4px;}
+#msg{color:#c0392b;font-size:13px;min-height:18px;margin:0;}
+.err #pin{border-color:#c0392b;animation:shake .3s;}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+</style>
+</head>
+<body>
+<div id="lock">
+  <h2>日 和 商 事</h2>
+  <p>NICHIWA · 业务手册</p>
+  <input id="pin" type="password" placeholder="请输入访问密码" autocomplete="off">
+  <button id="go">打 开</button>
+  <p id="msg"></p>
+</div>
+<script>
+async function unlock(pw, silent){
+  const msg=document.getElementById("msg"), lock=document.getElementById("lock");
+  try{
+    msg.textContent="解锁中…"; msg.style.color="#9a938c";
+    const buf=await (await fetch("data.bin",{cache:"force-cache"})).arrayBuffer();
+    const salt=buf.slice(0,16), iv=buf.slice(16,28), ct=buf.slice(28);
+    const km=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveKey"]);
+    const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:310000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["decrypt"]);
+    const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv},key,ct);
+    localStorage.setItem("nichiwa_pw",pw);
+    const html=new TextDecoder().decode(pt);
+    document.open(); document.write(html); document.close();
+  }catch(e){
+    localStorage.removeItem("nichiwa_pw");
+    if(!silent){ msg.textContent="密码不对，再试试"; msg.style.color="#c0392b";
+      lock.classList.add("err"); setTimeout(()=>lock.classList.remove("err"),400); }
+    else { msg.textContent=""; }
+  }
+}
+document.getElementById("go").onclick=()=>unlock(document.getElementById("pin").value.trim(),false);
+document.getElementById("pin").addEventListener("keydown",e=>{if(e.key==="Enter")unlock(e.target.value.trim(),false);});
+const saved=localStorage.getItem("nichiwa_pw");
+if(saved) unlock(saved,true);
+</script>
+</body>
+</html>
