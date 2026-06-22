@@ -1,12 +1,12 @@
-{
+﻿{
   "name": "日和商事 · 七福",
   "short_name": "日和",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#221e1c",
-  "theme_color": "#b08d48",
+  "background_color": "#F7F6F3",
+  "theme_color": "#F7F6F3",
   "icons": [
     {
       "src": "icon-192.png",
